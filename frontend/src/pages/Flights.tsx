@@ -1,0 +1,250 @@
+import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Plane, Search, Calendar, Users, MapPin, Loader2, Filter } from 'lucide-react';
+import { flightsAPI, bookingsAPI } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import FlightCard, { Flight } from '@/components/cards/FlightCard';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import AuthModal from '@/components/auth/AuthModal';
+import CheckoutModal from '@/components/booking/CheckoutModal';
+
+const Flights = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
+
+  const [flights, setFlights] = useState<Flight[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
+  const [searchForm, setSearchForm] = useState({
+    from: searchParams.get('from') || '',
+    to: searchParams.get('to') || '',
+    departureDate: searchParams.get('departureDate') || '',
+    returnDate: searchParams.get('returnDate') || '',
+    passengers: parseInt(searchParams.get('passengers') || '1'),
+  });
+
+  useEffect(() => {
+    if (searchParams.get('from')) {
+      handleSearch();
+    }
+  }, []);
+
+  const handleSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setIsLoading(true);
+    try {
+      const response = await flightsAPI.search(searchForm);
+      setFlights(response.data.flights || response.data || []);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch flights. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBook = async (flight: Flight) => {
+    if (!isAuthenticated) {
+      setSelectedFlight(flight);
+      setAuthModalOpen(true);
+      return;
+    }
+    setSelectedFlight(flight);
+    // Open payment modal
+  };
+
+  return (
+    <main className="min-h-screen bg-background pt-24">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <h1 className="font-display text-4xl font-bold text-foreground mb-2">
+            Find Your Perfect Flight
+          </h1>
+          <p className="text-muted-foreground">
+            Search and compare flights from hundreds of airlines
+          </p>
+        </motion.div>
+
+        {/* Search Form */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-card rounded-2xl p-6 shadow-card border border-border/50 mb-8"
+        >
+          <form onSubmit={handleSearch}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+              <div className="space-y-2">
+                <Label>From</Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="City or airport"
+                    className="pl-10"
+                    value={searchForm.from}
+                    onChange={(e) => setSearchForm({ ...searchForm, from: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>To</Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="City or airport"
+                    className="pl-10"
+                    value={searchForm.to}
+                    onChange={(e) => setSearchForm({ ...searchForm, to: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Departure</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="date"
+                    className="pl-10"
+                    value={searchForm.departureDate}
+                    onChange={(e) => setSearchForm({ ...searchForm, departureDate: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Return</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="date"
+                    className="pl-10"
+                    value={searchForm.returnDate}
+                    onChange={(e) => setSearchForm({ ...searchForm, returnDate: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Passengers</Label>
+                <div className="relative">
+                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    min="1"
+                    max="9"
+                    className="pl-10"
+                    value={searchForm.passengers || ''}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      setSearchForm({ ...searchForm, passengers: isNaN(val) ? 0 : val });
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button type="submit" variant="hero" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4" />
+                    Search Flights
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </motion.div>
+
+        {/* Results */}
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+              <p className="text-muted-foreground">Searching for the best flights...</p>
+            </div>
+          ) : flights.length > 0 ? (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-muted-foreground">
+                  <span className="font-semibold text-foreground">{flights.length}</span> flights found
+                </p>
+                <Button variant="ghost" size="sm">
+                  <Filter className="w-4 h-4" />
+                  Filters
+                </Button>
+              </div>
+              {flights.map((flight, index) => (
+                <motion.div
+                  key={flight._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <FlightCard flight={flight} onBook={handleBook} />
+                </motion.div>
+              ))}
+            </>
+          ) : searchParams.get('from') ? (
+            <div className="text-center py-20">
+              <Plane className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">No flights found</h3>
+              <p className="text-muted-foreground">
+                Try adjusting your search criteria or dates.
+              </p>
+            </div>
+          ) : (
+            <div className="text-center py-20">
+              <Plane className="w-16 h-16 text-primary/50 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">Start Your Search</h3>
+              <p className="text-muted-foreground">
+                Enter your travel details above to find available flights.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => {
+          setAuthModalOpen(false);
+          if (selectedFlight && isAuthenticated) {
+            handleBook(selectedFlight);
+          }
+        }}
+        mode="login"
+        onModeChange={() => { }}
+      />
+
+      <CheckoutModal
+        isOpen={!!selectedFlight && !authModalOpen}
+        onClose={() => setSelectedFlight(null)}
+        bookingDetails={selectedFlight ? { ...selectedFlight, ...searchForm } : {}}
+        type="flight"
+      />
+    </main>
+  );
+};
+
+export default Flights;
