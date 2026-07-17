@@ -1,14 +1,13 @@
 // ============================================
 // FILE: seed.js (Run this to add sample data)
 // ============================================
-const mongoose = require('mongoose');
+require('dotenv').config();
+const connectDB = require('./config/database');
 const Flight = require('./models/Flight');
 const Hotel = require('./models/Hotel');
 
 // Connect to MongoDB
-mongoose.connect('mongodb://127.0.0.1:27017/travelgoHo')
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('❌ Connection Error:', err));
+connectDB();
 
 // Sample Flights Data
 const flightsData = [
