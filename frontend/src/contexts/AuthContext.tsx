@@ -5,6 +5,7 @@ interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
 }
 
 interface AuthContextType {
@@ -14,6 +15,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,10 +24,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchProfile = async () => {
+    try {
+      const response = await authAPI.getProfile();
+      setUser(response.data.user);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    } catch (error) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Backend currently does not return a JWT token in this project.
-    // Use persisted `user` in localStorage (if any) to restore auth state.
+    const token = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
+    
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
@@ -33,19 +49,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.removeItem('user');
       }
     }
-    setIsLoading(false);
-  }, []);
 
-  const fetchProfile = async () => {
-    try {
-      const response = await authAPI.getProfile();
-      setUser(response.data.user);
-    } catch (error) {
-      localStorage.removeItem('token');
-    } finally {
+    if (token) {
+      fetchProfile();
+    } else {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   const login = async (email: string, password: string) => {
     const response = await authAPI.login({ email, password });
@@ -84,6 +94,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         login,
         register,
         logout,
+        refreshProfile: fetchProfile,
       }}
     >
       {children}

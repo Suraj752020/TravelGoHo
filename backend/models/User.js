@@ -21,6 +21,12 @@ const userSchema = new mongoose.Schema({
   phone: {
     type: String
   },
+  resetOtp: {
+    type: String
+  },
+  resetOtpExpires: {
+    type: Date
+  },
   createdAt: {
     type: Date,
     default: Date.now

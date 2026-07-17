@@ -26,6 +26,16 @@ export const authAPI = {
   login: (data: { email: string; password: string }) =>
     api.post('/auth/login', data),
   getProfile: () => api.get('/auth/profile'),
+  updateProfile: (data: { name: string; phone?: string }) =>
+    api.put('/auth/profile', data),
+  forgotPassword: (data: { email: string }) =>
+    api.post('/auth/forgot-password', data),
+  verifyOtp: (data: { email: string; otp: string }) =>
+    api.post('/auth/verify-otp', data),
+  resetPassword: (data: { email: string; otp: string; password: string }) =>
+    api.post('/auth/reset-password', data),
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    api.put('/auth/change-password', data),
 };
 
 // Flights API

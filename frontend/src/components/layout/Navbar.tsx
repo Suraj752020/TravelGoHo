@@ -1,10 +1,18 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, Hotel, Calendar, User, Menu, X, LogOut } from 'lucide-react';
+import { Plane, Hotel, Calendar, User, Menu, X, LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/auth/AuthModal';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const Navbar = () => {
   const location = useLocation();
@@ -68,20 +76,43 @@ const Navbar = () => {
             {/* Auth Buttons */}
             <div className="hidden lg:flex items-center gap-3">
               {isAuthenticated ? (
-                <div className="flex items-center gap-3">
-                  <div className={`flex items-center gap-2 ${isTransparent ? 'text-primary-foreground' : 'text-foreground'}`}>
-                    <User className="w-4 h-4" />
-                    <span className="text-sm font-medium">{user?.name}</span>
-                  </div>
-                  <Button
-                    variant={isTransparent ? 'hero-outline' : 'ghost'}
-                    size="sm"
-                    onClick={logout}
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Logout
-                  </Button>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant={isTransparent ? 'hero-outline' : 'ghost'}
+                      className="flex items-center gap-2"
+                    >
+                      <User className="w-4 h-4" />
+                      <span>{user?.name}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-white border border-border shadow-md rounded-xl p-1.5 mt-2">
+                    <DropdownMenuLabel className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
+                      My Account
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator className="my-1 border-t border-border/50" />
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="flex items-center gap-2 px-2 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer outline-none">
+                        <User className="w-4 h-4 text-primary" />
+                        <span>Profile Settings</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/bookings" className="flex items-center gap-2 px-2 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer outline-none">
+                        <Calendar className="w-4 h-4 text-primary" />
+                        <span>My Bookings</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-1 border-t border-border/50" />
+                    <DropdownMenuItem
+                      onClick={logout}
+                      className="flex items-center gap-2 px-2 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer outline-none"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Logout</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <>
                   <Button
@@ -137,15 +168,39 @@ const Navbar = () => {
                 ))}
                 <div className="pt-4 border-t border-border space-y-2">
                   {isAuthenticated ? (
-                    <>
+                    <div className="space-y-1">
                       <div className="flex items-center gap-2 p-3">
                         <User className="w-5 h-5 text-primary" />
-                        <span className="font-medium">{user?.name}</span>
+                        <span className="font-medium text-foreground">{user?.name}</span>
                       </div>
-                      <Button variant="outline" className="w-full" onClick={logout}>
+                      <Link
+                        to="/profile"
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <User className="w-5 h-5 text-primary" />
+                        <span className="font-medium">Profile Settings</span>
+                      </Link>
+                      <Link
+                        to="/bookings"
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Calendar className="w-5 h-5 text-primary" />
+                        <span className="font-medium">My Bookings</span>
+                      </Link>
+                      <Button
+                        variant="outline"
+                        className="w-full mt-2 flex items-center gap-2 justify-center"
+                        onClick={() => {
+                          logout();
+                          setIsMobileMenuOpen(false);
+                        }}
+                      >
+                        <LogOut className="w-4 h-4" />
                         Logout
                       </Button>
-                    </>
+                    </div>
                   ) : (
                     <>
                       <Button
