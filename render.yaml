@@ -1,0 +1,39 @@
+services:
+  # ----------------------------------------------------
+  # BACKEND SERVICE (Node.js Web Service)
+  # ----------------------------------------------------
+  - type: web
+    name: travelgoho-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 5050
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGO_URI
+        sync: false # Set your MongoDB Atlas connection URI here
+      - key: RAZORPAY_KEY_ID
+        sync: false # Set Razorpay Key ID
+      - key: RAZORPAY_KEY_SECRET
+        sync: false # Set Razorpay Key Secret
+
+  # ----------------------------------------------------
+  # FRONTEND SERVICE (Vite/React Static Site)
+  # ----------------------------------------------------
+  - type: web
+    name: travelgoho-frontend
+    env: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: travelgoho-backend
+          type: web
+          property: url
